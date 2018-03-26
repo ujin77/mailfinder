@@ -12,12 +12,15 @@ maildir = '.'
 dbpath = 'mailboxindex.db'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+parser.add_argument("-v", "--verbose", help="output verbosity", action="store_true")
 parser.add_argument("-u", "--updatedb", help="update database", action="store_true")
 parser.add_argument("-n", "--newdb", help="new database", action="store_true")
-parser.add_argument("-a", "--showall", help="show all", action="store_true")
 parser.add_argument("-p", "--progress", help="show progress", action="store_true")
+parser.add_argument("-a", "--showall", help="show all", action="store_true")
 parser.add_argument("-s", "--search", help="find mail from or to")
+parser.add_argument("-j", "--subj", dest='_subj', help="find mail by subject")
+parser.add_argument("-f", "--from", dest='_from', help="find mail by from")
+parser.add_argument("-t", "--to", dest='_to', help="find mail by to")
 parser.add_argument("-m", "--maildir", help="Mailbox directory")
 
 args=parser.parse_args()
@@ -38,6 +41,8 @@ dbselect_to = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailbox
  WHERE mail_to LIKE (:filter);"""
 dbselect_from = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailbox
  WHERE mail_from LIKE (:filter)"""
+dbselect_subj = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailbox
+ WHERE mail_subject LIKE (:filter)"""
 
 p = re.compile('^[0-9]+\.[A-Za-z0-9]+\..*')
 
@@ -56,7 +61,7 @@ def get_decoded_header(headers, section):
                 res += d[0]
     except UnicodeDecodeError as e:
         if section == 'subject':
-            return('SUBJECT DECODE ERROR')
+            return('-=SUBJECT DECODE ERROR=-')
         else:
             return(headers[section])
     except Exception as e:
@@ -90,6 +95,11 @@ def parsefile(file_name):
         print('From: %s' % mail_to)
         print('To: %s' % mail_from)
         print('Subject: %s' % mail_subject)
+def print_row(row):
+    print 'File: %s' % row[0]
+    print 'From: %s' % row[1]
+    print 'To: %s' % row[2]
+    print 'Subject: %s' % row[3]
 
 def updatedb():
     for root, subdirs, files in os.walk(maildir):
@@ -163,4 +173,23 @@ if args.search:
         print 'To: %s' % row[2]
         print 'Subject: %s' % row[3]
         print('==============================')
+if args._from:
+    echo("Filter: %s" % args._from)
+    print('==============================')
+    for row in cn.execute(dbselect_from, ('%'+ args._from +'%',)):
+        print_row(row)
+        print('==============================')
+if args._to:
+    echo("Filter: %s" % args._to)
+    print('==============================')
+    for row in cn.execute(dbselect_to, ('%'+ args._to +'%',)):
+        print_row(row)
+        print('==============================')
+if args._subj:
+    echo("Filter: %s" % args._subj)
+    print('==============================')
+    for row in cn.execute(dbselect_subj, ('%'+ args._subj +'%',)):
+        print_row(row)
+        print('==============================')
+
 cn.close()
