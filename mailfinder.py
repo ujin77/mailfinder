@@ -55,18 +55,22 @@ def decode_str(str):
     return(res.replace('\n', ''))
 
 def parsefile(file_name):
-    headers = Parser().parse(open(file_name, 'r'))
-    mail_to = decode_str(headers['to'])
-    mail_from = decode_str(headers['from'])
-    mail_subject = decode_str(headers['subject'])
-    echo('ADD TO DATABASE')
-    echo('File: %s' % file_name)
-    echo('From: %s' % mail_to)
-    echo('To: %s' % mail_from)
-    echo('Subject: %s' % mail_subject)
-    echo('=============')
-    params = (file_name, mail_from, mail_to, mail_subject)
-    cn.execute(dbinsert, params)
+    try:
+        headers = Parser().parse(open(file_name, 'r'))
+        mail_to = decode_str(headers['to'])
+        mail_from = decode_str(headers['from'])
+        mail_subject = decode_str(headers['subject'])
+        echo('ADD TO DATABASE')
+        echo('File: %s' % file_name)
+        echo('From: %s' % mail_to)
+        echo('To: %s' % mail_from)
+        echo('Subject: %s' % mail_subject)
+        echo('=============')
+        params = (file_name, mail_from, mail_to, mail_subject)
+        cn.execute(dbinsert, params)
+    except Exception as e:
+        print(e)
+        print(file_name)
 
 def updatedb():
     for root, subdirs, files in os.walk(maildir):
