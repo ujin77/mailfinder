@@ -15,6 +15,7 @@ parser.add_argument("-v", "--verbose", help="increase output verbosity", action=
 parser.add_argument("-u", "--updatedb", help="update database", action="store_true")
 parser.add_argument("-n", "--newdb", help="new database", action="store_true")
 parser.add_argument("-a", "--showall", help="show all", action="store_true")
+parser.add_argument("-p", "--progress", help="show progress", action="store_true")
 parser.add_argument("-s", "--search", help="find mail from or to")
 parser.add_argument("-m", "--maildir", help="Mailbox directory")
 
@@ -78,12 +79,18 @@ def updatedb():
                     file_abspath = os.path.abspath(filePath)
                     if not cn.execute(dbselect_filename, (file_abspath,)).fetchone():
                         parsefile(file_abspath)
+                        if args.progress and not args.verbose:
+                            print '.',
+    if args.progress and not args.verbose: print '.'
     for row in cn.execute(dbselect_files):
         if not os.path.isfile(row[0]):
             if args.verbose:
                 echo('Delete File: %s' % row[0])
             cn.execute(dbdelete_file,(row[0],))
+            if args.progress and not args.verbose:
+                print '.',
     cn.commit()
+    if args.progress and not args.verbose: print '.'
 
 config = ConfigParser.ConfigParser()
 config.read(['/etc/mailfinder.cfg', os.path.expanduser('~/.mailfinder.cfg'), 'mailfinder.cfg'])
@@ -104,7 +111,6 @@ if args.verbose:
 
 cn = sqlite3.connect(dbpath)
 cn.executescript(dbcreate)
-
 
 if args.newdb:
     echo("Drop data in database and update")
