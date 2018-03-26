@@ -50,6 +50,12 @@ def echo(str):
     if args.verbose:
         print str
 
+def print_row(row):
+    print 'File: %s' % row[0]
+    print 'From: %s' % row[1]
+    print 'To: %s' % row[2]
+    print 'Subject: %s' % row[3]
+
 def get_decoded_header(headers, section):
     try:
         decoded=decode_header(headers[section])
@@ -95,11 +101,6 @@ def parsefile(file_name):
         print('From: %s' % mail_to)
         print('To: %s' % mail_from)
         print('Subject: %s' % mail_subject)
-def print_row(row):
-    print 'File: %s' % row[0]
-    print 'From: %s' % row[1]
-    print 'To: %s' % row[2]
-    print 'Subject: %s' % row[3]
 
 def updatedb():
     for root, subdirs, files in os.walk(maildir):
@@ -125,6 +126,7 @@ def updatedb():
     cn.commit()
     if args.progress and not args.verbose: print '.'
 
+#################MAIN#######################
 config = ConfigParser.ConfigParser()
 config.read(['/etc/mailfinder.cfg', os.path.expanduser('~/.mailfinder.cfg'), 'mailfinder.cfg'])
 if config.has_section('main'):
@@ -132,7 +134,6 @@ if config.has_section('main'):
         maildir=config.get('main', 'maildir')
     if config.has_option('main', 'dbpath'):
         dbpath = config.get('main', 'dbpath')
-
 
 if args.maildir:
     maildir=args.maildir
@@ -144,7 +145,6 @@ if args.verbose:
 
 cn = sqlite3.connect(dbpath)
 cn.text_factory = str
-
 cn.executescript(dbcreate)
 
 if args.newdb:
@@ -158,20 +158,14 @@ if args.updatedb:
 if args.showall:
     print('==============================')
     for row in cn.execute(dbselect_all):
-        print 'File: %s' % row[0]
-        print 'From: %s' % row[1]
-        print 'To: %s' % row[2]
-        print 'Subject: %s' % row[3]
+        print_row(row)
         print('==============================')
 
 if args.search:
     echo("Filter: %s" % args.search)
     print('==============================')
     for row in cn.execute(dbselect_from, ('%'+ args.search +'%',)):
-        print 'File: %s' % row[0]
-        print 'From: %s' % row[1]
-        print 'To: %s' % row[2]
-        print 'Subject: %s' % row[3]
+        print_row(row)
         print('==============================')
 if args._from:
     echo("Filter: %s" % args._from)
