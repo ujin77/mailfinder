@@ -8,7 +8,6 @@ import argparse
 import ConfigParser
 
 maildir = '.'
-#dbpath = '/var/db/mailboxindex.db'
 dbpath = 'mailboxindex.db'
 
 parser = argparse.ArgumentParser()
@@ -85,6 +84,14 @@ def updatedb():
                 echo('Delete File: %s' % row[0])
             cn.execute(dbdelete_file,(row[0],))
     cn.commit()
+
+config = ConfigParser.ConfigParser()
+config.read(['/etc/mailfinder.cfg', os.path.expanduser('~/.mailfinder.cfg'), 'mailfinder.cfg'])
+if config.has_section('main'):
+    if config.has_option('main', 'maildir'):
+        maildir=config.get('main', 'maildir')
+    if config.has_option('main', 'dbpath'):
+        dbpath = config.get('main', 'dbpath')
 
 cn = sqlite3.connect(dbpath)
 cn.executescript(dbcreate)
