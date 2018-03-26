@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os, re
 from email.parser import Parser
@@ -44,22 +45,35 @@ def echo(str):
     if args.verbose:
         print str
 
-def decode_str(str):
-    decoded=decode_header(str)
-    res=''
-    for d in decoded:
-        if d[1]:
-            res += d[0].decode(d[1])
+def get_decoded_header(headers, section):
+    try:
+        decoded=decode_header(headers[section])
+        res=''
+        for d in decoded:
+            if d[1]:
+                res += d[0].decode(d[1])
+            else:
+                res += d[0]
+    except UnicodeDecodeError as e:
+        if section == 'subject':
+            return('SUBJECT DECODE ERROR')
         else:
-            res += d[0]
+            return(headers[section])
+    except Exception as e:
+        print(type(e))
+        print(e.args)
+        print('Exception: %s' % e)
+        print('Section: %s' % section)
+        print('Original header: %s' % headers[section])
+        raise 'get_decoded_header'
     return(res.replace('\n', ''))
 
 def parsefile(file_name):
     try:
         headers = Parser().parse(open(file_name, 'r'))
-        mail_to = decode_str(headers['to'])
-        mail_from = decode_str(headers['from'])
-        mail_subject = decode_str(headers['subject'])
+        mail_to = get_decoded_header(headers,'to')
+        mail_from = get_decoded_header(headers,'from')
+        mail_subject = get_decoded_header(headers,'subject')
         echo('ADD TO DATABASE')
         echo('File: %s' % file_name)
         echo('From: %s' % mail_to)
@@ -69,8 +83,13 @@ def parsefile(file_name):
         params = (file_name, mail_from, mail_to, mail_subject)
         cn.execute(dbinsert, params)
     except Exception as e:
-        print(e)
-        print(file_name)
+        print(type(e))
+        print(e.args)
+        print('Exception: %s' % e)
+        print('File: %s' % file_name)
+        print('From: %s' % mail_to)
+        print('To: %s' % mail_from)
+        print('Subject: %s' % mail_subject)
 
 def updatedb():
     for root, subdirs, files in os.walk(maildir):
@@ -114,6 +133,8 @@ if args.verbose:
     print 'Maildir: %s' % maildir
 
 cn = sqlite3.connect(dbpath)
+cn.text_factory = str
+
 cn.executescript(dbcreate)
 
 if args.newdb:
