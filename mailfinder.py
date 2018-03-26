@@ -93,8 +93,6 @@ if config.has_section('main'):
     if config.has_option('main', 'dbpath'):
         dbpath = config.get('main', 'dbpath')
 
-cn = sqlite3.connect(dbpath)
-cn.executescript(dbcreate)
 
 if args.maildir:
     maildir=args.maildir
@@ -103,6 +101,10 @@ if args.verbose:
     print "Verbosity turned on"
     print 'Database: %s' % dbpath
     print 'Maildir: %s' % maildir
+
+cn = sqlite3.connect(dbpath)
+cn.executescript(dbcreate)
+
 
 if args.newdb:
     echo("Drop data in database and update")
