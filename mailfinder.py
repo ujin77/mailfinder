@@ -17,6 +17,7 @@ parser.add_argument("-u", "--updatedb", help="update database", action="store_tr
 parser.add_argument("-n", "--newdb", help="new database", action="store_true")
 parser.add_argument("-a", "--showall", help="show all", action="store_true")
 parser.add_argument("-s", "--search", help="find mail from or to")
+parser.add_argument("-m", "--maildir", help="Mailbox directory")
 
 args=parser.parse_args()
 
@@ -87,6 +88,9 @@ def updatedb():
 
 cn = sqlite3.connect(dbpath)
 cn.executescript(dbcreate)
+
+if args.maildir:
+    maildir=args.maildir
 
 if args.verbose:
     print "Verbosity turned on"
