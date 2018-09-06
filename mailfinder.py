@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, re
+import os
+import re
 from email.parser import Parser
 from email.header import decode_header
 import sqlite3
 import argparse
 import ConfigParser
 
-maildir = '.'
+mail_dir = '.'
 dbpath = 'mailboxindex.db'
 
 parser = argparse.ArgumentParser()
@@ -23,7 +24,7 @@ parser.add_argument("-f", "--from", dest='_from', help="find mail by from")
 parser.add_argument("-t", "--to", dest='_to', help="find mail by to")
 parser.add_argument("-m", "--maildir", help="Mailbox directory")
 
-args=parser.parse_args()
+args = parser.parse_args()
 
 ###############################################################
 dbcreate = """
@@ -46,9 +47,11 @@ dbselect_subj = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailb
 
 p = re.compile('^[0-9]+\.[A-Za-z0-9]+\..*')
 
+
 def echo(str):
     if args.verbose:
         print str
+
 
 def print_row(row):
     print 'File: %s' % row[0]
@@ -56,10 +59,11 @@ def print_row(row):
     print 'To: %s' % row[2]
     print 'Subject: %s' % row[3]
 
+
 def get_decoded_header(headers, section):
+    res = ''
     try:
         decoded=decode_header(headers[section])
-        res=''
         for d in decoded:
             if d[1]:
                 res += d[0].decode(d[1])
@@ -67,19 +71,23 @@ def get_decoded_header(headers, section):
                 res += d[0]
     except UnicodeDecodeError as e:
         if section == 'subject':
-            return('-=SUBJECT DECODE ERROR=-')
+            return '-=SUBJECT DECODE ERROR=-'
         else:
-            return(headers[section])
+            return headers[section]
     except Exception as e:
         print(type(e))
         print(e.args)
         print('Exception: %s' % e)
         print('Section: %s' % section)
         print('Original header: %s' % headers[section])
-        raise 'get_decoded_header'
-    return(res.replace('\n', ''))
+        # raise 'get_decoded_header'
+    return res.replace('\n', '')
+
 
 def parsefile(file_name):
+    mail_to = ''
+    mail_from = ''
+    mail_subject = ''
     try:
         headers = Parser().parse(open(file_name, 'r'))
         mail_to = get_decoded_header(headers,'to')
@@ -102,15 +110,16 @@ def parsefile(file_name):
         print('To: %s' % mail_from)
         print('Subject: %s' % mail_subject)
 
+
 def updatedb():
-    for root, subdirs, files in os.walk(maildir):
-        for file in os.listdir(root):
-            filePath = os.path.join(root, file)
-            if os.path.isdir(filePath):
+    for root, subdirs, files in os.walk(mail_dir):
+        for file_name in os.listdir(root):
+            file_path = os.path.join(root, file_name)
+            if os.path.isdir(file_path):
                 pass
             else:
-                if p.match(file):
-                    file_abspath = os.path.abspath(filePath)
+                if p.match(file_name):
+                    file_abspath = os.path.abspath(file_path)
                     if not cn.execute(dbselect_filename, (file_abspath,)).fetchone():
                         parsefile(file_abspath)
                         if args.progress and not args.verbose:
@@ -120,28 +129,29 @@ def updatedb():
         if not os.path.isfile(row[0]):
             if args.verbose:
                 echo('Delete File: %s' % row[0])
-            cn.execute(dbdelete_file,(row[0],))
+            cn.execute(dbdelete_file, (row[0],))
             if args.progress and not args.verbose:
                 print '.',
     cn.commit()
     if args.progress and not args.verbose: print '.'
+
 
 #################MAIN#######################
 config = ConfigParser.ConfigParser()
 config.read(['/etc/mailfinder.cfg', os.path.expanduser('~/.mailfinder.cfg'), 'mailfinder.cfg'])
 if config.has_section('main'):
     if config.has_option('main', 'maildir'):
-        maildir=config.get('main', 'maildir')
+        mail_dir = config.get('main', 'maildir')
     if config.has_option('main', 'dbpath'):
         dbpath = config.get('main', 'dbpath')
 
 if args.maildir:
-    maildir=args.maildir
+    mail_dir = args.maildir
 
 if args.verbose:
     print "Verbosity turned on"
     print 'Database: %s' % dbpath
-    print 'Maildir: %s' % maildir
+    print 'Maildir: %s' % mail_dir
 
 cn = sqlite3.connect(dbpath)
 cn.text_factory = str
@@ -164,25 +174,25 @@ if args.showall:
 if args.search:
     echo("Filter: %s" % args.search)
     print('==============================')
-    for row in cn.execute(dbselect_from, ('%'+ args.search +'%',)):
+    for row in cn.execute(dbselect_from, ('%' + args.search + '%',)):
         print_row(row)
         print('==============================')
 if args._from:
     echo("Filter: %s" % args._from)
     print('==============================')
-    for row in cn.execute(dbselect_from, ('%'+ args._from +'%',)):
+    for row in cn.execute(dbselect_from, ('%' + args._from + '%',)):
         print_row(row)
         print('==============================')
 if args._to:
     echo("Filter: %s" % args._to)
     print('==============================')
-    for row in cn.execute(dbselect_to, ('%'+ args._to +'%',)):
+    for row in cn.execute(dbselect_to, ('%' + args._to + '%',)):
         print_row(row)
         print('==============================')
 if args._subj:
     echo("Filter: %s" % args._subj)
     print('==============================')
-    for row in cn.execute(dbselect_subj, ('%'+ args._subj +'%',)):
+    for row in cn.execute(dbselect_subj, ('%' + args._subj + '%',)):
         print_row(row)
         print('==============================')
 
