@@ -44,6 +44,8 @@ dbselect_from = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailb
  WHERE mail_from LIKE (:filter)"""
 dbselect_subj = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailbox
  WHERE mail_subject LIKE (:filter)"""
+dbselect_any = """SELECT file_name, mail_from, mail_to, mail_subject FROM mailbox
+ WHERE mail_to LIKE (:filter) OR mail_from LIKE (:filter) OR mail_subject LIKE (:filter)"""
 
 p = re.compile('^[0-9]+\.[A-Za-z0-9]+\..*')
 
@@ -174,7 +176,7 @@ if args.showall:
 if args.search:
     echo("Filter: %s" % args.search)
     print('==============================')
-    for row in cn.execute(dbselect_from, ('%' + args.search + '%',)):
+    for row in cn.execute(dbselect_any, ('%' + args.search + '%',)):
         print_row(row)
         print('==============================')
 if args._from:
